@@ -27,13 +27,46 @@ int window::OnCreate(LPCREATESTRUCT lpcs)
     this->m_hWndClient = this->dlg_main->Create(this->m_hWnd);
     this->dlg_main->ShowWindow(SW_SHOW);
 
+    niData.cbSize = sizeof(NOTIFYICONDATA);
+    niData.hWnd = this->m_hWnd;
+    niData.uID = MY_TRAY_ICON_ID;
+    niData.uCallbackMessage = MY_TRAY_ICON_MESSAGE;
+    niData.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+    niData.hIcon = (HICON)LoadImage(GetModuleHandleA(NULL),
+            MAKEINTRESOURCE(IDR_MAINFRAME),
+            IMAGE_ICON,
+            GetSystemMetrics(SM_CXSMICON),
+            GetSystemMetrics(SM_CYSMICON),
+            LR_DEFAULTCOLOR);
+
+    return 0;
+}
+
+LRESULT window::OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
+    Shell_NotifyIcon(NIM_ADD, &niData);
+    ShowWindow(SW_HIDE);
+    return 0;
+}
+
+LRESULT window::OnApp(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
+    if (uMsg == MY_TRAY_ICON_MESSAGE && lParam == WM_LBUTTONUP) {
+        ShowWindow(SW_RESTORE);
+        Shell_NotifyIcon(NIM_DELETE, &niData);
+    }
     return 0;
 }
 
 LRESULT window::OnSysCommand(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
+    TCHAR tip[128] = _T("audio-router");
+    int tipl = _tcslen(tip);
+    for (int i = 0; i < tipl; ++i) {
+        niData.szTip[i] = tip[i];
+    }
+
     if(wParam == SC_MINIMIZE)
     {
+        ShowWindow(SW_HIDE);
         for(dialog_main::dialog_arrays_t::iterator it = this->dlg_main->dialog_arrays.begin();
             it != this->dlg_main->dialog_arrays.end();
             it++)
@@ -81,8 +114,16 @@ LRESULT window::OnAbout(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BO
         L"Audio Router version 0.10.2.\n" \
         L"\nIf you come across any bugs(especially relating to routing or duplicating), " \
         L"or just have an idea for a new feature, " \
-        L"please send a PM to the developer on reddit: reddit.com/user/audiorouterdev/", 
+        L"please send a PM to the developer on reddit: reddit.com/user/audiorouterdev/",
         L"About", MB_ICONINFORMATION);
+    return 0;
+}
+
+
+
+LRESULT window::OnFileClose(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
+{
+    DestroyWindow();
     return 0;
 }
 
