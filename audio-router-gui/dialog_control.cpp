@@ -407,8 +407,12 @@ bool dialog_control::add_audio_session(IAudioSessionControl2* session)
             audio_volume->GetMasterVolume(&level);
             audio_volume->GetMute(&mute);
         }
+
+        float lvl = cbrt((float)level);
+        lvl = lvl * 100.f; // need to make this log
+
         this->audio_volumes.push_back(audio_volume);
-        this->set_volume((int)(level * 100.f));
+        this->set_volume((int)floor(lvl + 0.5f));
         this->set_mute(mute);
     }
     else
@@ -486,11 +490,14 @@ void dialog_control::set_volume(int level, bool set)
     this->ctrl_slider.SetPos(100 - level);
     if(set)
     {
+        float lvl = ((float)level) / 100.f;
+        lvl = lvl * lvl * lvl; // need to make this log
+
         for(audio_volumes_t::iterator it = this->audio_volumes.begin();
             it != this->audio_volumes.end();
             it++)
         {
-            (*it)->SetMasterVolume(((float)level) / 100.f, NULL);
+            (*it)->SetMasterVolume(lvl, NULL);
         }
     }
 }
